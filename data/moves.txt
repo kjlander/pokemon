@@ -1,0 +1,2 @@
+name        type        pp      power       accuracy    priority      components  
+tackle      normal      35      40          100         0             attack
