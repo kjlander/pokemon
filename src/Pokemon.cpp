@@ -37,20 +37,28 @@ namespace pokemon
 int main()
 {
     using namespace pokemon;
+
     MonType grass("grass", grassSE, grassNVE);
     MonType fire("fire", fireSE, fireNVE);
 
     Mon charmander(fire, MonType(), "charmander", 100, 1);
     Mon bulbasaur(grass, MonType(), "bulbasaur", 100, 0);
 
-    MonMove tackle(grass, 35, 40, 100, 0, CompAttack());
+    MonMove tackle("Tackle", grass, 35, 40, 100, 0, 
+        CompAttack());
+    MonMove ember("Ember", fire, 25, 40, 100, 0, 
+        CompAttack(), CompStatus(Status::Burn));
+
     bulbasaur.addMove(tackle);
-    charmander.addMove(tackle);
+    charmander.addMove(tackle, ember);
+
 
     Battle battle(bulbasaur, charmander);
-    battle.getMon1().doMove(battle, 0, bulbasaur);
+    //battle.getMon1().doMove(battle, 0, bulbasaur);
 
     battle.makeEvent(bulbasaur, 0);
+    battle.makeEvent(charmander, 1);
+    battle.orderEvents();
     battle.doEvents();
     // std::cout << "This is Pokemon!" << std::endl;
 

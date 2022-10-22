@@ -1,1 +1,1 @@
-add_executable(pokemon Pokemon.cpp Battle.hpp Battle.cpp Mon.hpp Mon.cpp MonMove.hpp MonMove.cpp MonType.hpp MonUtilities.hpp MoveComponent.hpp MoveComponents.hpp MoveComponents.cpp)
+add_executable(pokemon Pokemon.cpp Battle.cpp Mon.cpp MonMove.cpp MoveComponents.cpp)
