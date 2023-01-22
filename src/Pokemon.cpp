@@ -38,16 +38,14 @@ int main()
 {
     using namespace pokemon;
 
-    MonType grass("grass", grassSE, grassNVE);
-    MonType fire("fire", fireSE, fireNVE);
+    Mon charmander(Type::Fire, Type::None, "charmander", 100, 1);
+    Mon bulbasaur(Type::Grass, Type::None, "bulbasaur", 100, 0);
 
-    Mon charmander(fire, MonType(), "charmander", 100, 1);
-    Mon bulbasaur(grass, MonType(), "bulbasaur", 100, 0);
-
-    MonMove tackle("Tackle", grass, 35, 40, 100, 0, 
+    MonMove tackle("Tackle", Type::Normal, 35, 40, 100, 0, 
         CompAttack());
-    MonMove ember("Ember", fire, 25, 40, 100, 0, 
+    MonMove ember("Ember", Type::Fire, 25, 40, 100, 0, 
         CompAttack(), CompStatus(Status::Burn));
+    //MonMove lullaby("Lullaby", normal, )
 
     bulbasaur.addMove(tackle);
     charmander.addMove(tackle, ember);

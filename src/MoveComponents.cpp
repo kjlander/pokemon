@@ -1,21 +1,22 @@
 #include "MoveComponents.hpp"
+#include "MonUtilities.hpp"
 
 namespace pokemon 
 {
 void CompAttack::execute(Battle& battle, const Mon& mon, const MonMove& owningMove)
 {
-    std::cout << "CompAttack::execute() called" << std::endl;
+    monLog("CompAttack::execute() called");
     battle.getOpponent(mon).receiveAttack(owningMove.m_Power);
 }
 
 void CompWeather::execute(Battle& battle, const Mon& mon, const MonMove& owningMove)
 {
-    std::cout << "CompWeather::execute() called" << std::endl;
+    monLog("CompWeather::execute() called");
 }
 
 void CompStatus::execute(Battle& battle, const Mon& mon, const MonMove& owningMove)
 {
-    std::cout << "CompStatus::execute() called" << std::endl;
-    battle.getOpponent(mon).setStatus(m_Status);
+    monLog("CompStatus::execute() called");
+    battle.inflictStatus<Status>(mon, battle.getOpponent(mon), m_Status);
 }
 } // namespace pokemon

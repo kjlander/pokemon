@@ -1,6 +1,7 @@
 #include <functional>
 
 #include "MonMove.hpp"
+#include "MoveComponent.hpp"
 
 namespace pokemon 
 {
@@ -11,7 +12,7 @@ using namespace std::placeholders;
 
 void MonMove::doMove(Battle& battle, Mon& attacker)
 {
-    for (auto& component : m_Components)
+    for (std::shared_ptr<MoveComponent>& component : m_Components)
     {
         component->execute(battle, attacker, *this);
     }

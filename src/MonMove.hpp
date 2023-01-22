@@ -46,14 +46,18 @@ public:
     // args must be object(s) derived from MoveComponent
     template<typename... Args>
     explicit MonMove(const std::string& name,
-                        const MonType& moveType,
-                        int pp, 
-                        int power, 
-                        int accuracy, 
-                        int priority, 
-                        Args&&... args)
-        : m_Type(moveType), m_Name(name), m_PP(pp), m_Power(power), 
-            m_Accuracy(accuracy), m_Priority(priority)
+                     Type moveType,
+                     int pp, 
+                     int power, 
+                     int accuracy, 
+                     int priority, 
+                     Args&&... args)
+                        : m_Type(moveType), 
+                          m_Name(name), 
+                          m_PP(pp), 
+                          m_Power(power), 
+                          m_Accuracy(accuracy), 
+                          m_Priority(priority)
     { 
         (m_Components.emplace_back(new Args(args)), ...); 
     }
@@ -72,7 +76,7 @@ private:
 
 public:
     std::vector<std::shared_ptr<MoveComponent>> m_Components;
-    MonType m_Type;
+    Type m_Type;
     std::string m_Name;
     int m_PP;
     int m_Power;

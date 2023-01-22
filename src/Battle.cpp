@@ -1,4 +1,11 @@
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
+#include <random>
+#include <type_traits>
+
+#include <assert.h>
 
 #include "Battle.hpp"
 #include "MonUtilities.hpp"
@@ -27,38 +34,122 @@ namespace pokemon
 //     return *this;
 // }
 
-void Battle::doEvents() 
+void Battle::beforeMove(Mon &mon)
 {
-    for (auto& event : m_EventStack) 
+    struct Statuses& statuses = mon.m_Statuses;
+
+    if (statuses.NVStatus == Status::Freeze)
     {
-        switch (event.m_Attacker.get().status())
+        if (percentChance(20))
         {
-            case Status::None : 
+            statuses.NVStatus = Status::None;
+            monLog(mon.getName(), " has thawed!");
+        }
+    }
+    if (statuses.NVStatus == Status::Sleep)
+    {
+        uint8_t& timer = statuses.NVtimer;
+        if (timer > 0)
+            --timer;
+        else
+            monLog(mon.getName(), " woke up!");
+    }
+    if (statuses.Curse)
+    {
+        mon.receiveFractionDmg(1 / 4.0f);
+        monLog(mon.getName(), " took CURSE damage!");
+    }
+    if (statuses.LeechSeed)
+    {
+        int healAmount = mon.receiveFractionDmg(1 / 8.0f);
+        // If the mon who was leech seeded has Liquid Ooze, the attacker gets damaged
+        // instead of healed.
+        if (mon.m_Ability != Ability::LiquidOoze)
+        {
+            statuses.LeechSeeder->heal(healAmount);
+            monLog(mon.getName(), "'s health is sapped by LEECH SEED!");
+        }
+        else
+        {
+            statuses.LeechSeeder->receiveAttack(healAmount);
+            monLog(mon.getName(), " has ability LIQUID OOZE!");
+            monLog(statuses.LeechSeeder->getName(), " received damage from LIQUID OOZE!");
+        }    
+    }
+    if (statuses.Nightmare && statuses.NVStatus == Status::Sleep)
+    {
+        mon.receiveFractionDmg(1 / 4.0f);
+        monLog(mon.getName(), " is locked in a NIGHTMARE!");
+    }
+    if (statuses.Confusion)
+    {
+        monLog(mon.getName(), " is CONFUSED!");
+        statuses.Confusion--;
+        if (percentChance(50))
+        {
+            mon.receiveAttack(40);
+            monLog(mon.getName(), " hurt itself in CONFUSION!");
+        }
+    }
+    if (statuses.Drowsy)
+    {
+        statuses.Drowsy--;
+        if (statuses.Drowsy == 0)
+        {
+            // A default constructed Mon is given since there is no attacker information
+            // to pass here.
+            inflictStatus(Mon(), mon, Status::Sleep);
+        }
+    }
+    if (statuses.Flinch)
+    {
+        statuses.Flinch--;
+        monLog(mon.getName(), " FLINCHED!");
+    }
+}
+
+
+void Battle::doEvents()
+{
+    for (BattleEvent& event : m_EventStack) 
+    {
+        beforeMove(event.m_Attacker);
+        
+        //event.m_Attacker.get().update();
+        switch (event.m_Attacker.get().m_Statuses.NVStatus)
+        {
+            case Status::None: 
                 event.doEvent(*this);
                 break;
 
-            case Status::Burn : 
+            case Status::Burn: 
+                monLog(event.getAttackerName(), " is hurt by its burn!");
                 event.m_Attacker.get().receiveFractionDmg(1.0f/16);
                 if (event.m_Attacker.get().m_Concious)
+                {
                     event.doEvent(*this);
+                }
                 break;
 
-            case Status::Freeze : 
-                std::cout << event.getAttackerName() << " is frozen!" << std::endl;
+            case Status::Freeze: 
+                monLog(event.getAttackerName(), " is frozen solid!");
                 break;
 
-            case Status::Paralysis :
-                std::cout << event.getAttackerName() << " is paralyzed!" << std::endl;
+            case Status::Paralysis:
+                monLog(event.getAttackerName(), " is paralyzed! It can't move!");
                 break;
 
-            case Status::Poison : 
+            case Status::Poison: 
+                monLog(event.getAttackerName(), " is hurt by poison!");
                 event.m_Attacker.get().receiveFractionDmg(1.0f/8);
                 if (event.m_Attacker.get().m_Concious)
+                {
                     event.doEvent(*this);
+                }
                 break;
 
-            case Status::Sleep : 
-                std::cout << event.getAttackerName() << " is asleep!" << std::endl;
+            case Status::Sleep: 
+                monLog(event.getAttackerName()," is asleep!");
                 if (event.m_Name == "Snore" || event.m_Name == "Sleep Talk")
                 {
                     event.doEvent(*this);
@@ -78,10 +169,41 @@ void Battle::applyAttackMon1(int attackPwr)
     m_Mon1.receiveAttack(attackPwr);
 }
 
-void Battle::initCombatants(const Mon& mon1, const Mon& mon2) 
+// Status Battle::fetchStatus(const Status& status)
+// {
+//     StatusMap::const_iterator iter = Statuses.find(status);
+//     if (iter != Statuses.end()) 
+//     {
+//         return status;
+//     }
+//     else 
+//     {
+//         throw std::invalid_argument("Invalid status supplied to StatusManager::fetchStatus()");
+//     }
+// }
+
+void Battle::initCombatants(Mon& mon1, Mon& mon2) 
 {
     m_Mon1 = mon1;
     m_Mon2 = mon2;
+}
+
+uint8_t Battle::setTurnTimer(int min, int max)
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distr(min, max);
+    return distr(gen);
+}
+
+// Returns true within the chance specified out of 100.
+// For 50/50 odds, chance should be 50.
+bool Battle::percentChance(int chance)
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distr(1, 100);
+    return distr(gen) > chance;
 }
 
 Mon& Battle::getOpponent(const Mon& mon) noexcept

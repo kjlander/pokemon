@@ -1,9 +1,11 @@
 #include <cmath>
 #include <cstdlib>
 #include <functional>
+#include <iostream>
 
 
 #include "Mon.hpp"
+#include "MonUtilities.hpp"
 
 namespace pokemon
 {
@@ -64,9 +66,87 @@ class Battle;
 //     return *this;
 // }
 
+// StatusManager
+
+// bool StatusManager::update() noexcept
+// {
+//     if (!m_IsTimed)
+//         return false;
+//     if (m_IsTimed && m_Turns > 0) 
+//     { 
+//         --m_Turns; 
+//     }
+//     if (m_Turns == 0) 
+//     { 
+//         return true; 
+//     }
+//     return false;
+// }
+
+// // Resets the member variables to a newly provided status.
+// // This was split into a new function so that its caller can catch
+// // an error if this throws.
+// void StatusManager::fetchStatus(const Status& status)
+// {
+//     m_Status = status;
+
+//     StatusMap::const_iterator iter = m_StatusMap->find(m_Status);
+//     if (iter != m_StatusMap->end()) 
+//     {
+//         m_Turns = iter->second;
+//     }
+//     else 
+//     {
+//         throw std::invalid_argument("Invalid status supplied to StatusManager::fetchStatus()");
+//     }
+// }
+
+// // Calls fetchStatus and finishes the setup work by resetting
+// // the timer if applicable.
+// void StatusManager::assign(const Status& status)
+// {
+//     try 
+//     {
+//         fetchStatus(status);
+//     } 
+//     catch (std::invalid_argument ex) 
+//     {
+//         // if this happened, something is wrong
+//         std::cerr << ex.what() << std::endl;
+//         std::exit(-1);
+//     }   
+
+//     // -1 indicates that this Status does not have a timer
+//     if (m_Turns != -1)
+//     {
+//         m_IsTimed = true;
+//         std::random_device rd;
+//         std::mt19937 gen(rd());
+//         std::uniform_int_distribution<> distr(1, m_Turns);
+//         m_Turns = distr(gen);
+//     }
+//     else 
+//     { 
+//         m_IsTimed = false; 
+//     }
+// }
+
+// Mon
+
+void Mon::heal(int hp)
+{
+    int newHp = hp + m_CurrHp;
+    m_CurrHp = newHp < m_MaxHp ? newHp : m_MaxHp;
+}
+
 void Mon::doMove(Battle& battle, int moveIndex, Mon& attacker)
 {
     m_Moves[moveIndex].doMove(battle, attacker);
+}
+
+bool Mon::hasItem(const Item &item) const noexcept
+{
+    return m_Item == item ? true : false;
 }
 
 void Mon::receiveAttack(int attackPwr)
@@ -81,16 +161,21 @@ void Mon::receiveAttack(int attackPwr)
     }
 }
 
-void Mon::receiveFractionDmg(float fraction)
+// Returns the amount of damage applied.
+int Mon::receiveFractionDmg(float fraction)
 {
     int dmg = round(m_MaxHp * fraction);
     if (m_CurrHp > dmg) 
     { 
-        m_CurrHp -= dmg; 
+        m_CurrHp -= dmg;
+        return dmg; 
     }
     else 
     { 
-        faint(); 
+        int finalHp = m_CurrHp;
+        faint();
+        // 1 is the minimum that should be returned.
+        return finalHp > 1 ? finalHp : 1;
     }
 }
 
@@ -103,7 +188,7 @@ void Mon::faint() noexcept
 {
     m_CurrHp = 0;
     m_Concious = false;
-    std::cout << getName() << " fainted!" << std::endl;
+    monLog(getName(), " fainted!");
 }
 
 void swap(Mon& lhs, Mon& rhs)
@@ -120,4 +205,26 @@ void swap(Mon& lhs, Mon& rhs)
     swap(lhs.m_Speed, rhs.m_Speed);
     swap(lhs.m_Concious, rhs.m_Concious);
 }
+
+// void Mon::update() noexcept
+// {
+//     // StatusManager::update() will return true if a status timer has expired.
+//     // In this case, we need to print a message indicating what happened.
+//     if (m_NVStatus.update())
+//     {
+//         switch (m_NVStatus.name())
+//         {
+//             // If the status was Sleep, print a message and reset status to
+//             // None.
+//             case Status::Sleep:
+//                 std::cout << getName() << " woke up!" << std::endl;
+//                 m_NVStatus.assign(Status::None);
+//                 break;
+
+//             default:
+//                 break;
+//         }
+//     }
+// }
+
 } // namespace pokemon
